@@ -12,7 +12,7 @@
 
 ## division of labor
 
-### kenan <3
+### kenan <3 >:(
 * import proj1 code 
 * do lat/long
 * make a bar chart of ridership based on specific date
