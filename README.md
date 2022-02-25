@@ -2,7 +2,7 @@
 
 ## milestones
 * import proj1 code 
-* do lat/long
+* do lat/long [DONE]
 * make a bar chart of ridership based on specific date
 * make the leaflet
 * getting all the days of the year and getting next / last
