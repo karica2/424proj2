@@ -36,8 +36,12 @@ for(stop in unique(latlong$MAP_ID)) {
   currentStop <- data.frame(ridership[ridership$station_id == stop, ], loc, lineColor)
   
   tableName = paste("datafiles/", stop, ".csv", sep = "")
-  write.csv(currentStop, tableName)
+  # write.csv(currentStop, tableName)
+  write.table(currentStop, file = tableName, sep = "\t")
 }
+
+# x = as.data.frame(read.table(file = tableName, sep = "\t", header = TRUE))
+x <- read.table(file  = tableName, sep = "\t")
 
 
 # for KEVIN: this is how you read in the data properly. it wards off the quotation marks and modified col names.
@@ -76,5 +80,40 @@ getLineColor <- function(r) {
   return(color)
   
 }
+
+# code to load all files into one big dataframe
+
+summed_rides = data.frame(matrix(ncol=14, nrow=0))
+colnames(summed_rides) <- colnames(currentStop)
+
+for(filename in list.files("datafiles")) { 
+  print(filename)
+  filename <- paste("datafiles/", filename, sep="")
+  currentStop <- as.data.frame(read.csv(filename, fileEncoding = "UTF-8-BOM"))
+  summed_rides <- rbind(summed_rides, currentStop)
+  
+  }
+
+
+
+
+# stop name, mapid, loc
+
+# kevin copy this code
+ride_metadata = data.frame(matrix(ncol=3, nrow=0))
+colnames(ride_metadata) <- c("stopname", "mapID", "loc")
+for(filename in list.files("datafiles")) { 
+  print(filename)
+  filename <- paste("datafiles/", filename, sep="")
+  currentStop <- as.data.frame(read.csv(filename, fileEncoding = "UTF-8-BOM"))
+  firstRow = head(currentStop, 1)
+  cur_mapid <- firstRow$station_id
+  cur_name <- firstRow$stationname
+  cur_loc <- firstRow$loc
+  
+  ride_metadata <- rbind(ride_metadata, c(cur_name, cur_mapid, cur_loc))
+  
+}
+
 
 
