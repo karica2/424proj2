@@ -21,3 +21,6 @@
 * make the leaflet
 * getting all the days of the year and getting next / last
 * learn how to sort by min / max / alphabetical
+
+### Done
+* Leaflet displays chicago by default with a zoom, currently has no markers
