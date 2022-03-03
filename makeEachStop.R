@@ -27,21 +27,20 @@ latlong <- read.table(file = "latlong.tsv", sep = "\t", header = TRUE, quote = "
 
 
 
-print(unique(latlong$MAP_ID))
 for(stop in unique(latlong$MAP_ID)) {
   # latlong has 2 of every stop for it's entries, but the location is the same so we just need that. pick the first one
   
   loc <- latlong[latlong$MAP_ID == stop, "Location"][1]
   lineColor <- getLineColor(latlong[latlong$MAP_ID == stop, ])
   currentStop <- data.frame(ridership[ridership$station_id == stop, ], loc, lineColor)
-  
   tableName = paste("datafiles/", stop, ".csv", sep = "")
-  # write.csv(currentStop, tableName)
-  write.table(currentStop, file = tableName, sep = "\t")
+  print(tableName)
+  write.csv(currentStop, tableName)
+  # write.table(currentStop, file = tableName, sep = "\t")
 }
 
 # x = as.data.frame(read.table(file = tableName, sep = "\t", header = TRUE))
-x <- read.table(file  = tableName, sep = "\t")
+# x <- read.table(file  = tableName, sep = "\t")
 
 
 # for KEVIN: this is how you read in the data properly. it wards off the quotation marks and modified col names.
