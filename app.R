@@ -22,9 +22,10 @@ setwd("datafiles")
 # ALL CREDIT GOES TO THE AUTHOR. 
 # I checked with the professor if I could use this solution in a piazza post and got the green light. 
 files = list.files(".", ".csv", full.names = TRUE)
-# summed <- do.call(rbind, lapply(files, function(x) read.csv(x, stringsAsFactors = FALSE)))
-
+# READ: for testing purposes, you only need to run this code once, as it takes like 13-15 seconds. once you have the data in your env, you can comment it out. 
+summed <- do.call(rbind, lapply(files, function(x) read.csv(x, stringsAsFactors = FALSE)))
 names(latlong)[names(latlong)=="MAP_ID"] <- "station_id"
+
 
 # make our lines
 blueLine <- summed[summed$station_id %in% latlong[latlong$BLUE == "true", ]$station_id, ]
@@ -45,11 +46,24 @@ ui <- fluidPage(
     
     # interaction quirk: changing the date selector, and subsequently using the 'next day' or 'previous day' button should change the date selected on the date selector.  
     
-    column(width = 3, dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")), 
+    column(width = 3, 
+           fluidRow(dateInput
+                    (inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
+                    ),
+           fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
+                    )
+           ), 
     column(width = 9, plotOutput("allStops"))
   )
 )
 server <- function(input, output, session) {
+  
+  observeEvent(input$nextDay, {
+    updateDateInput(session = session, inputId = "currentDate", value = as.Date(input$currentDate) + 1)
+  })
+  observeEvent(input$prevDay, {
+    updateDateInput(session = session, inputId = "currentDate", value = as.Date(input$currentDate) - 1)
+  })
   
   # need to find a way to sort this data
   allStopsReactive <- reactive({ summed[summed$date_ymd == input$currentDate, ] })
