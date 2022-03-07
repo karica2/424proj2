@@ -12,85 +12,53 @@ library(scales)
 library(leaflet)
 
 setwd("~/class/424/424proj2")
-
-# read in our ridership file
-ridership <- read.table(file = "ridership.tsv", sep = "\t", header = TRUE, quote = "")
-
-# fix the date, add useful information
-ridership$date_ymd <- ymd(paste(year(mdy(ridership$date)), month(mdy(ridership$date)), day(mdy(ridership$date)), sep = "-"))
-ridership$month <- month(ridership$date_ymd)
-ridership$month_char <- month.abb[month(ridership$date_ymd)]
-ridership$year <- year(ridership$date_ymd)
-ridership$day <- day(ridership$date_ymd)
-ridership$day_of_week <- weekdays(ridership$date_ymd)
-# ridership$date_correct <- ymd(paste(ridership$Year, ridership$Month, "01", sep="-"))
-
-# add lat / long
 latlong <- read.table(file = "latlong.tsv", sep = "\t", header = TRUE, quote = "" , fill=TRUE, row.names = NULL)
 
-# match values of ridership dataframe to lat/long entries of system file
+# for some reason these lines of code only work when the current dir is datafiles. 
+setwd("datafiles")
 
-# loop through each entry of latlong 
-# we only actually have to do this once. it takes a while, and the updated ridership can be found in ridership_loc.csv
-ridership[, 'location'] = NA
-ridership[, 'BLUE'] = NA
-ridership[, 'G'] = NA
-ridership[, 'BRN'] = NA
-ridership[, 'P'] = NA
-ridership[, 'Pexp'] = NA
-ridership[, 'Y'] = NA# x <- 0
-ridership[, 'Pnk'] = NA
-ridership[, 'O'] = NA
+# NOTE: I DID NOT COME UP WITH THE FOLLOWING TWO LINES OF CODE. I USED A SOLUTION BY leerssej
+# TAKEN FROM: https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once
+# ALL CREDIT GOES TO THE AUTHOR. 
+# I checked with the professor if I could use this solution in a piazza post and got the green light. 
+files = list.files(".", ".csv", full.names = TRUE)
+# summed <- do.call(rbind, lapply(files, function(x) read.csv(x, stringsAsFactors = FALSE)))
 
-for(stop in 1:nrow(latlong) ){
-  loc <- latlong[stop, "Location"]
-  # print(stop)
+names(latlong)[names(latlong)=="MAP_ID"] <- "station_id"
 
-  stopnum <- latlong[stop, "MAP_ID"]
-  #print(latlong[stop, "RED"])
-  ridership[ridership$station_id == stopnum, ]$location <- loc
-  # append the cols for what line it is
-  ridership[ridership$station_id == stopnum, ]$RED <- latlong[stop, "RED"]
-  ridership[ridership$station_id == stopnum, ]$BLUE <-   loc <- latlong[stop, "BLUE"]
-  ridership[ridership$station_id == stopnum, ]$G <-   loc <- latlong[stop, "G"]
-  ridership[ridership$station_id == stopnum, ]$BRN <-   loc <- latlong[stop, "BRN"]
-  ridership[ridership$station_id == stopnum, ]$P <-   loc <- latlong[stop, "P"]
-  ridership[ridership$station_id == stopnum, ]$Pexp <-   loc <- latlong[stop, "Pexp"]
-  ridership[ridership$station_id == stopnum, ]$Y <-   loc <- latlong[stop, "Y"]
-  ridership[ridership$station_id == stopnum, ]$Pnk <-   loc <- latlong[stop, "Pnk"]
-  ridership[ridership$station_id == stopnum, ]$O <-   loc <- latlong[stop, "O"]
-
-  }
-
-write.table(x = ridership, file = "ridership_loc.tsv", sep = "\t")
-# set all entries in ridership that share a station name to have the same lat/long 
-uicBlue <- subset(ridership, BLUE == "true")
-uicRed <- subset(ridership, RED == "true")
-uicGreen <- subset(ridership, G == "true")
-uicBrown <- subset(ridership, BRN == "true")
-uicPurple <- subset(ridership, P == "true")
-uicPink <- subset(ridership, Pnk == "true")
-uicYellow <- subset(ridership, O == "true")
-
-write.table(x = uicBlue, file = "uic_Blue.tsv", sep = "\t")
-write.table(x = uicRed, file = "uic_Red.tsv", sep = "\t")
-write.table(x = uicGreen, file = "uic_Green.tsv", sep = "\t")
-write.table(x = uicBrown, file = "uic_Brown.tsv", sep = "\t")
-write.table(x = uicPurple, file = "uic_Purple.tsv", sep = "\t")
-write.table(x = uicPink, file = "uic_Pink.tsv", sep = "\t")
-write.table(x = uicYellow, file = "uic_Yellow.tsv", sep = "\t")
-# write.table(x = ridership, file = "ridership_loc.tsv", sep = "\t")
+# make our lines
+blueLine <- summed[summed$station_id %in% latlong[latlong$BLUE == "true", ]$station_id, ]
+redLine <- summed[summed$station_id %in% latlong[latlong$RED == "true", ]$station_id, ]
+greenLine <- summed[summed$station_id %in% latlong[latlong$G == "true", ]$station_id, ]
+purpleLine <- summed[summed$station_id %in% latlong[latlong$P == "true", ]$station_id, ]
+purpleExpLine <- summed[summed$station_id %in% latlong[latlong$Pexp == "true", ]$station_id, ]
+brownLine <- summed[summed$station_id %in% latlong[latlong$Brn == "true", ]$station_id, ]
+orangeLine <- summed[summed$station_id %in% latlong[latlong$O == "true", ]$station_id, ]
+yellowLine <- summed[summed$station_id %in% latlong[latlong$Y == "true", ]$station_id, ]
+pinkLine <- summed[summed$station_id %in% latlong[latlong$Pnk == "true", ]$station_id, ]
 
 
-nrow(uicBlue) + nrow(uicRed) + nrow(uicGreen) + nrow(uicBrown) + nrow(uicPurple) + nrow(uicPink) + nrow(uicYellow)
-nrow(ridership)
 
-
-# maybe for each color line, pull those stops and then add location data?
-blueStops <- subset(latlong, BLUE == "true")
-blueLine <- subset(ridership, station_id %in% blueStops$MAP_ID)
-write.csv(x = blueLine, file = "b-line.csv")
-
-redStops <- subset(latlong, RED == "true")
-redLine <- subset(ridership, station_id %in% redStops$MAP_ID)
-write.csv(x = redLine, file = "r-line.csv")
+ui <- fluidPage(
+  "Hello, world!",
+  fluidRow(
+    
+    # interaction quirk: changing the date selector, and subsequently using the 'next day' or 'previous day' button should change the date selected on the date selector.  
+    
+    column(width = 3, dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")), 
+    column(width = 9, plotOutput("allStops"))
+  )
+)
+server <- function(input, output, session) {
+  
+  # need to find a way to sort this data
+  allStopsReactive <- reactive({ summed[summed$date_ymd == input$currentDate, ] })
+  
+  output$allStops <- renderPlot({
+    
+    allData <- allStopsReactive()
+    ggplot(data=allData, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  })
+  
+}
+shinyApp(ui, server)
