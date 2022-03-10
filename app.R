@@ -1,5 +1,5 @@
 # proj2 app
-# group is Kevin Eliott and Kenan Arica
+# group is Kevin Elliott and Kenan Arica
 # team name: Swag
 
 library(shiny)
@@ -238,7 +238,7 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
 )
 server <- function(input, output, session) {
   
-
+  map = createLeafletMap(session, 'map')
   
   observeEvent(input$nextDay, {
     updateDateInput(session = session, inputId = "currentDate", value = as.Date(input$currentDate) + 1)
@@ -379,17 +379,35 @@ server <- function(input, output, session) {
   # addProviderTiles("Esri.WorldGrayCanvas") %>%
   # we can probably just make a reactive variable with those strings to change it
   # quickly
+  # 144->147
   output$map <- renderLeaflet({
     leaflet() %>%
       addTiles() %>%  
       setView(lng =-87.658323, lat = 41.879036, zoom = 12) %>%
-      addMarkers(lat = latVector[1:144], lng = longVector[1:144], label = nameVector[1:144])
+      addMarkers(lat = latVector[1:147], lng = longVector[1:147], label = nameVector[1:147], layerId = nameVector[1:147])
+  })
+  
+  observeEvent(input$map_marker_click, {
+    click <- input$map_marker_click
+    #text<-paste("Lattitude ", click$lat, "Longtitude ", click$lng, "Name ", click$id)
+    text<-paste("Now displaying data for: ", click$id)
+    
+    proxy <- leafletProxy("map")
+    proxy %>% clearPopups() %>%
+      addPopups(click$lng, click$lat, text)
+  })
+  
+  observeEvent(input$map_marker_click, {
+    click <- input$map_marker_click
+    stop_name <- click$id
+    updateSelectizeInput(session = session, inputId = "currentStop", choices = getLineValues(input$currentLine), selected = stop_name)
   })
   
 }
 shinyApp(ui, server)
 
 # TODO: 
+# ur mom lol
 # Adapt Proj1 code to just be 4 output functions that each yield a table. 
 
 
