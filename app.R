@@ -81,7 +81,6 @@ allStops <- data.frame(latlong_unique$station_id, latlong_unique$STATION_NAME)
 # )
 
 weekdayNums <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-themeOptions <- c("Default","Satellite","Grayscale")
 
 monthNums <- seq(1, 12)
 months <- month.abb[monthNums]
@@ -170,7 +169,6 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
                     fluidRow(selectInput(inputId = "currentLine", choices = lineOptions, label = "Select Line")),
                     fluidRow(selectizeInput(inputId = "currentStop", choices = latlong_unique$STATION_NAME, label = "Select Stop")),
                     fluidRow(textOutput("selectedStopTitle")),
-                    fluidRow(radioButtons(inputId = "Theme", choices = c("Default","Satellite","Grayscale"), label = "Map Theme", selected = "Default"))
                     ),
              column(10, 
                     # for the month
@@ -246,8 +244,7 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
 server <- function(input, output, session) {
   
   map = createLeafletMap(session, 'map')
-  themeReactive <- reactive({input$Theme})
-  
+
   observeEvent(input$nextDay, {
     updateDateInput(session = session, inputId = "currentDate", value = as.Date(input$currentDate) + 1)
   })
@@ -396,22 +393,18 @@ server <- function(input, output, session) {
   # 144->147
   output$map <- renderLeaflet({
     
-    theme <- themeReactive()
-    
-    if(theme == "Default"){
-      theme = "Esri"
-    }
-    else if(theme == "Satellite"){
-      theme = "Esri.WorldImagery"
-    }
-    else if(theme == "Grayscale"){
-      theme = "Esri.WorldGrayCanvas"
-    }
-    
+    #addProviderTiles(theme) %>%
     leaflet() %>%
       addTiles() %>%  
       setView(lng =-87.658323, lat = 41.879036, zoom = 12) %>%
-      addProviderTiles(theme) %>%
+      addTiles("Ersi",group = "Default")%>%
+      addProviderTiles("Esri.WorldGrayCanvas", group = "Grayscale") %>%
+      addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
+      addLayersControl(
+        baseGroups = c("Default","Grayscale","Satellite"),
+        options = layersControlOptions(collapsed = FALSE),
+        position = "bottomleft"
+      ) %>%
       addMarkers(lat = latVector[1:147], lng = longVector[1:147], label = nameVector[1:147], layerId = nameVector[1:147])
   })
   
