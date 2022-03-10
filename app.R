@@ -252,33 +252,29 @@ server <- function(input, output, session) {
   })
   
   allStopsReactive <- reactive({ subset(summed, summed$date_ymd == input$currentDate) })
-  selectedStopReactive <- reactive({ subset(latlong_unique, summed$STATION_NAME == input$currentStop) })
-  selectedStopDataReactive <- reactive({ subset(summed, summed$stationname == input$currentStop & summed$year == year(input$currentDate))})
-  selectedStopDataYearly <- reactive({ subset(summed, summed$stationname == input$currentStop) })
+  selectedStopReactive <- reactive({ subset(latlong_unique, latlong_unique$STATION_NAME == input$currentStop) })
+  selectedStopDataReactive <- reactive({ subset(summed, summed$station_id == head(latlong_unique[latlong_unique$STATION_NAME == input$currentStop, ], 1)$station_id & summed$year == year(input$currentDate))})
+  selectedStopDataYearly <- reactive({ subset(summed, summed$station_id == head(latlong_unique[latlong_unique$STATION_NAME == input$currentStop, ], 1)$station_id) })
   output$allStops <- renderPlot({
     
     allData <- allStopsReactive()
-    print("current_stop")
 
     ggplot(data=allData, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(x="Station")
   
     })
   
-  output$selectedStopTitle <- renderText(
-    {
+  output$selectedStopTitle <- renderText({
       current_stop <- selectedStopReactive()
       paste("Ridership for ", input$currentStop)
-    }
-  )
+    })
+  
   output$MonthlyPlot <- renderPlot({
     
     monthNums <- seq(1, 12)
     months <- month.abb[monthNums]
     
     current_stop <- selectedStopDataReactive()
-    print(head(current_stop, 5))
     ggplot(data=current_stop, aes(x=month_char, y=rides)) + geom_bar(stat = "identity", fill="#098CF9")  + scale_y_continuous(labels = scales::comma) + scale_x_discrete("Months", limits = months) + labs(x="Month", y = "Rides")
-    
     
   })
   
@@ -295,7 +291,6 @@ server <- function(input, output, session) {
       data <- month_table_df
       data
   }, options = list(pageLength = 12, searching = FALSE), rownames = FALSE))
-  
   
   output$YearlyPlot <- renderPlot({
     
@@ -338,7 +333,6 @@ server <- function(input, output, session) {
     data
     
   }, options = list(pageLength = 7, searching = FALSE), rownames = FALSE))
-  
   
   output$DailyPlot <- renderPlot({
     
@@ -398,9 +392,19 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$map_marker_click, {
+    
+    # TODO: if we ever switch to stop names using latlong this will break
+    
     click <- input$map_marker_click
     stop_name <- click$id
-    updateSelectizeInput(session = session, inputId = "currentStop", choices = getLineValues(input$currentLine), selected = stop_name)
+    # we've got our stop name, grab the ID for it
+    station_id <- head(summed[summed$stationname == stop_name, ], 1)$station_id
+    # grab the station name from latlong using the ID
+    # print(colnames(latlong_unique))
+    station_name <- latlong_unique[latlong_unique$station_id == station_id, ]$STATION_NAME
+    summed_station_name <- head(summed[summed$station_id == station_id, ], 1)$stationname
+    print(station_name)
+    updateSelectizeInput(session = session, inputId = "currentStop", choices = getLineValues(input$currentLine), selected = station_name)
   })
   
 }
