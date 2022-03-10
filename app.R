@@ -50,8 +50,7 @@ getLineValues <- function(lineColor) {
   }
 
 
-  
-  
+
 # dataframes that hold all rows pertaining to their own lines. we probably wont need them, but not bad to have. 
 blueLine <- summed[summed$station_id %in% latlong[latlong$BLUE == "true", ]$station_id, ]
 redLine <- summed[summed$station_id %in% latlong[latlong$RED == "true", ]$station_id, ]
@@ -155,9 +154,15 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
                     fluidRow(dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
                     ),
                     fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
-                      )
+                      ),
+                    fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "yes"))
              ),
-             column(10, box(title="All Stop Ridership", width=12, plotOutput("allStops", height = "30vh"), height = "40vh", background = mainThemeColor))
+             column(10, box(title="All Stop Ridership", width=12, height = "40vh", background = mainThemeColor,
+                            conditionalPanel(condition = "input.useAlphabetical == 'Alphabetical'", 
+                                             plotOutput("allStopsAlphabetical", height = "30vh") ),
+                            conditionalPanel(condition = "input.useAlphabetical == 'Ascending'", 
+                                             plotOutput("allStopsNumeric", height = "30vh") ),
+                            ))
            ),
            # major row 2
            fluidRow(
@@ -255,13 +260,25 @@ server <- function(input, output, session) {
   selectedStopReactive <- reactive({ subset(latlong_unique, latlong_unique$STATION_NAME == input$currentStop) })
   selectedStopDataReactive <- reactive({ subset(summed, summed$station_id == head(latlong_unique[latlong_unique$STATION_NAME == input$currentStop, ], 1)$station_id & summed$year == year(input$currentDate))})
   selectedStopDataYearly <- reactive({ subset(summed, summed$station_id == head(latlong_unique[latlong_unique$STATION_NAME == input$currentStop, ], 1)$station_id) })
-  output$allStops <- renderPlot({
+  
+  output$allStopsNumeric <- renderPlot({
     
     allData <- allStopsReactive()
-
-    ggplot(data=allData, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(x="Station")
-  
+    allDataSorted <- data.frame(allData$stationname, allData$rides)
+    colnames(allDataSorted) <- c("stationname", "rides")
+    allDataSorted <- allDataSorted[order(allDataSorted$rides), ]
+    allDataSorted$stationname <- factor(allDataSorted$stationname, levels = allDataSorted$stationname) 
+    
+    ggplot(data=allDataSorted, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(x="Station")
+    
     })
+  
+  output$allStopsAlphabetical <- renderPlot({
+    
+    allData <- allStopsReactive()
+    ggplot(data=allData, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(x="Station")
+    
+  })
   
   output$selectedStopTitle <- renderText({
       current_stop <- selectedStopReactive()
