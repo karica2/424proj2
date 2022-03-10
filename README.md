@@ -23,4 +23,15 @@
 * learn how to sort by min / max / alphabetical
 
 ### Done
-* Leaflet displays chicago by default with a zoom, currently has no markers
+* Leaflet displays chicago by default with a zoom, currently has no marker
+
+
+### FINAL TODO: 
+* Add a min-max sort to the big graph
+* add inputs / conditionalPane to switch between alphabetical / minmax for the big graph
+* have map click pull up station
+* Radio buttons to select the map background
+
+#### Would be really nice to have
+* line colored markers on map
+* line colored bars on leaflet 
