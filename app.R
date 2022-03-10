@@ -155,7 +155,7 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
                     ),
                     fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
                       ),
-                    fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "yes"))
+                    fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "Alphabetical"))
              ),
              column(10, box(title="All Stop Ridership", width=12, height = "40vh", background = mainThemeColor,
                             conditionalPanel(condition = "input.useAlphabetical == 'Alphabetical'", 
