@@ -12,23 +12,20 @@ library(scales)
 library(leaflet)
 # library(tidyverse)
 
-#setwd("~/class/424/424proj2")
-setwd("C:/Users/guagu/OneDrive/Desktop/424proj2-main")
-
 latlong <- read.table(file = "latlong.tsv", sep = "\t", header = TRUE, quote = "" , fill=TRUE, row.names = NULL)
 
 # for some reason these lines of code only work when the current dir is datafiles. 
-setwd("datafiles")
+# setwd("datafiles")
 
 # NOTE: I DID NOT COME UP WITH THE FOLLOWING TWO LINES OF CODE. I USED A SOLUTION BY leerssej
 # TAKEN FROM: https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once
 # ALL CREDIT GOES TO THE AUTHOR. 
 # I checked with the professor if I could use this solution in a piazza post and got the green light. 
-files = list.files(".", ".csv", full.names = TRUE)
+files = list.files("datafiles/", ".csv", full.names = TRUE)
 # READ: for testing purposes, you only need to run this code once, as it takes like 13-15 seconds. once you have the data in your env, you can comment it out. 
 summed <- do.call(rbind, lapply(files, function(x) read.csv(x, stringsAsFactors = FALSE)))
 names(latlong)[names(latlong)=="MAP_ID"] <- "station_id"
-print(summed)
+
 latlong_unique <-  latlong[!duplicated(latlong$station_id), ]
 latlong_unique <- latlong_unique[order(latlong_unique$STATION_NAME), ]
 
@@ -84,12 +81,19 @@ allStops <- data.frame(latlong_unique$station_id, latlong_unique$STATION_NAME)
 #   grey = makeIcon("greyMarker.png")
 # )
 
-#View(summed)
+weekdayNums <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+
+
+monthNums <- seq(1, 12)
+months <- month.abb[monthNums]
+
 # map data is used to create the vectors that are given to the leaflet for markers
 mapData <- data.frame(summed$loc, summed$stationname,summed$station_id)
 mapData <- unique.data.frame(mapData)
 colnames(mapData) <- c("loc","stationname","station_id")
 #View(mapData)
+
+mainThemeColor = "blue"
 
 latVector <- vector(mode="numeric", length=0)
 longVector <- vector(mode="numeric", length=0)
@@ -137,25 +141,99 @@ for(row in 1:nrow(mapData)) {
 
 ##################
 
-ui <- fluidPage(
-  "Hello, world!",
-  fluidRow(
+ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar(disable = TRUE, collapsed = FALSE), dashboardBody(
     
     # interaction quirk: changing the date selector, and subsequently using the 'next day' or 'previous day' button should change the date selected on the date selector.  
     
-    column(width = 3, 
-           fluidRow(dateInput
-                    (inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
+    column(width = 9, 
+           # major row 1
+           fluidRow(
+             column(2, 
+                    fluidRow("Written by Kenan Arica and Kevin Elliott for CS 424 SP22. 
+                    This dashboard is designed to allow users to CTA stop ridership by day, and by stop, with the leaflet giving geospatial capabilites.
+                    Dataset provided by the CTA, and can be found at the Chicago Data Portal."),
+                    fluidRow(dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
                     ),
-           fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
-                    ),
-            fluidRow(selectInput(inputId = "currentLine", choices = lineOptions, label = "Select Line")),
-            fluidRow(selectizeInput(inputId = "currentStop", choices = latlong_unique$STATION_NAME, label = "Select Stop")),
-            fluidRow(textOutput("selectedStopTitle"))
+                    fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
+                      )
+             ),
+             column(10, box(title="All Stop Ridership", width=12, plotOutput("allStops", height = "30vh"), height = "40vh", background = mainThemeColor))
            ),
-    
-    column(width = 6, plotOutput("allStops")),
-    column(width = 3, leafletOutput("map",height="100vh"))
+           # major row 2
+           fluidRow(
+             column(2,
+                    fluidRow(selectInput(inputId = "currentLine", choices = lineOptions, label = "Select Line")),
+                    fluidRow(selectizeInput(inputId = "currentStop", choices = latlong_unique$STATION_NAME, label = "Select Stop")),
+                    fluidRow(textOutput("selectedStopTitle"))
+                    ),
+             column(10, 
+                    # for the month
+                    column(3, box(width = 12, title = "By Month", background = mainThemeColor,
+                                  fluidRow(
+                                    conditionalPanel(
+                                      condition = "input.monthly_table_toggle == 'No'",
+                                      column(width = 12, plotOutput("MonthlyPlot", height = "35vh"))
+                                    ),
+                                    conditionalPanel(
+                                      condition = "input.monthly_table_toggle == 'Yes'",
+                                      column(width = 12, dataTableOutput("MonthlyTable", height="35vh"))
+                                      ),
+                                    
+                                    ),
+                                  fluidRow(radioButtons(input="monthly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
+                                  )
+                           ),
+                    # for the year
+                    column(3, box(width = 12, title = "By Year", background = mainThemeColor,
+                                  fluidRow(
+                                    conditionalPanel(
+                                      condition = "input.yearly_table_toggle == 'No'",
+                                      column(width = 12, plotOutput("YearlyPlot", height = "35vh"))
+                                    ),
+                                    conditionalPanel(
+                                      condition = "input.yearly_table_toggle == 'Yes'",
+                                      column(width = 12, dataTableOutput("YearlyTable", height="35vh"))
+                                    ),
+
+                                  ),
+                                  fluidRow(radioButtons(input="yearly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
+                    )),
+                    column(3, box(width = 12, title = "By Day", background = mainThemeColor,
+                                  fluidRow(
+                                    conditionalPanel(
+                                      condition = "input.daily_table_toggle == 'No'",
+                                      column(width = 12, plotOutput("DailyPlot", height = "35vh"))
+                                    ),
+                                    conditionalPanel(
+                                      condition = "input.daily_table_toggle == 'Yes'",
+                                      column(width = 12, dataTableOutput("DailyTable", height="35vh"))
+                                    ),
+
+                                  ),
+                                  fluidRow(radioButtons(input="daily_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
+                    )),
+                    column(3, box(width = 12, title = "By Day", background = mainThemeColor,
+                                  fluidRow(
+                                    conditionalPanel(
+                                      condition = "input.weekly_table_toggle == 'No'",
+                                      column(width = 12, plotOutput("WeekdayPlot", height = "35vh"))
+                                    ),
+                                    conditionalPanel(
+                                      condition = "input.weekly_table_toggle == 'Yes'",
+                                      column(width = 12, dataTableOutput("WeeklyTable", height="35vh"))
+                                    ),
+                                    
+                                  ),
+                                  fluidRow(radioButtons(input="weekly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
+                    ))
+                    # column(3, box(width = 12, title = "By Year", background = mainThemeColor, plotOutput("YearlyPlot", height="35vh"))), 
+                    #column(3, box(width = 12, title = "By Day", background = mainThemeColor, plotOutput("DailyPlot", height="35vh"))), 
+                    #column(3, box(width = 12, title = "By Weekday", background = mainThemeColor, plotOutput("WeekdayPlot", height="35vh"))), 
+             )
+            
+           )
+    ),
+    column(width = 3, box(title = "Map of Stops", width = 12, background = mainThemeColor, leafletOutput("map", height="75vh")))
   )
 )
 server <- function(input, output, session) {
@@ -174,17 +252,15 @@ server <- function(input, output, session) {
   })
   
   allStopsReactive <- reactive({ subset(summed, summed$date_ymd == input$currentDate) })
-  selectedStopReactive <- reactive({ subset(latlong_unique, STATION_NAME == input$currentStop ) })
-  selectedStopDataReactive <- reactive({ subset(summed, STATION_NAME == input$currentStop )})
-  
+  selectedStopReactive <- reactive({ subset(latlong_unique, summed$STATION_NAME == input$currentStop) })
+  selectedStopDataReactive <- reactive({ subset(summed, summed$stationname == input$currentStop & summed$year == year(input$currentDate))})
+  selectedStopDataYearly <- reactive({ subset(summed, summed$stationname == input$currentStop) })
   output$allStops <- renderPlot({
     
     allData <- allStopsReactive()
     print("current_stop")
 
-    print(allData)
-    
-    ggplot(data=allData, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+    ggplot(data=allData, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(x="Station")
   
     })
   
@@ -194,6 +270,108 @@ server <- function(input, output, session) {
       paste("Ridership for ", input$currentStop)
     }
   )
+  output$MonthlyPlot <- renderPlot({
+    
+    monthNums <- seq(1, 12)
+    months <- month.abb[monthNums]
+    
+    current_stop <- selectedStopDataReactive()
+    print(head(current_stop, 5))
+    ggplot(data=current_stop, aes(x=month_char, y=rides)) + geom_bar(stat = "identity", fill="#098CF9")  + scale_y_continuous(labels = scales::comma) + scale_x_discrete("Months", limits = months) + labs(x="Month", y = "Rides")
+    
+    
+  })
+  
+  output$MonthlyTable <- DT::renderDataTable(DT::datatable({
+    
+    current_stop <- selectedStopDataReactive()
+    
+      month_table_df <- data.frame(Month=character(), Rides=integer())
+      for(mon in months) {
+        num <- with(current_stop, sum(rides[month_char == mon]))
+        rowdf <- data.frame(Month=mon, Rides=num)
+        month_table_df <- rbind(month_table_df, rowdf)
+      }
+      data <- month_table_df
+      data
+  }, options = list(pageLength = 12, searching = FALSE), rownames = FALSE))
+  
+  
+  output$YearlyPlot <- renderPlot({
+    
+    current_stop <- selectedStopDataYearly()
+    ggplot(data=current_stop, aes(x=year, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + scale_x_continuous("Year", breaks = seq(2001, 2021)) 
+    
+    
+  })
+  
+  output$YearlyTable <- DT::renderDataTable(DT::datatable({
+    
+    current_stop <- selectedStopDataYearly()
+    
+    year_table_df <- data.frame(Year=double(), Rides=integer())
+    
+    for(currentYear in 2001:2021) {
+      
+      num <- with(current_stop, sum(rides[currentYear == year]))
+      rowdf <- data.frame(Year=currentYear, Rides=num)
+      year_table_df <- rbind(year_table_df, rowdf)
+      
+    }
+    data <- year_table_df
+    data
+    
+  }, options = list(pageLength = 10, searching = FALSE), rownames = FALSE))
+  
+  output$WeeklyTable <- DT::renderDataTable(DT::datatable({
+    
+    current_stop <- selectedStopDataYearly()
+    
+    weekday_table_df <- data.frame(Weekday=character(), Rides=integer())
+    
+    for(wkday in weekdayNums) {
+      num <- with(current_stop, sum(rides[day_of_week == wkday]))
+      rowdf <- data.frame(Weekday=wkday, Rides=num)
+      weekday_table_df <- rbind(weekday_table_df, rowdf)
+    }
+    data <- weekday_table_df
+    data
+    
+  }, options = list(pageLength = 7, searching = FALSE), rownames = FALSE))
+  
+  
+  output$DailyPlot <- renderPlot({
+    
+    current_stop <- selectedStopDataReactive()
+    ggplot(data=current_stop, aes(x=as.Date(date_ymd), y=rides)) + geom_bar(stat="identity", fill = "#098CF9") + scale_x_date(date_breaks = "1 month") + labs(x = "Day", y = "Rides") 
+    
+    
+  })
+
+  output$DailyTable <- DT::renderDataTable(DT::datatable({
+    
+    current_stop <- selectedStopDataReactive()
+    
+    day_table_df <- data.frame(Day=character(), Rides=integer())
+    i <- 1
+    
+    current_stop <- current_stop[order(as.Date(current_stop$date_ymd, format = "%Y-&m-%d")), ]
+    for(i in 1:nrow(current_stop)) {
+      
+      rowdf <- data.frame(Day = current_stop[i, ]$date_ymd, Rides = current_stop[i, ]$rides)
+      day_table_df <- rbind(day_table_df, rowdf)
+    }
+    data <- day_table_df
+    data
+    
+  }, options = list(pageLength = 10, searching = FALSE), rownames = FALSE))  
+
+  output$WeekdayPlot <- renderPlot({
+    
+    current_stop <- selectedStopDataReactive()
+    ggplot(data=current_stop, aes(x=day_of_week, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma)  + scale_x_discrete("Weekdays", limits=weekdayNums, labels=c("Sunday" = "Sun","Monday" = "Mon", "Tuesday" = "Tues", "Wednesday" = "Wed", "Thursday" = "Thurs", "Friday" = "Fri", "Saturday" = "Sat"))
+    
+  })
   
   # uses default map, to change add the line
   # addProviderTiles("Esri.WorldImagery") %>%
