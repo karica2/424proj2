@@ -80,6 +80,33 @@ allStops <- data.frame(latlong_unique$station_id, latlong_unique$STATION_NAME)
 #   grey = makeIcon("greyMarker.png")
 # )
 
+# this version of the icons imo is way too light on the lower end
+# makes it very hard to find some stops
+# mapIcons <- iconList(
+#   tier5 = makeIcon("tier5.png"),
+#   tier4 = makeIcon("tier4.png"),
+#   tier3 = makeIcon("tier3.png"),
+#   tier2 = makeIcon("tier2.png"),
+#   tier1 = makeIcon("tier1.png"),
+#   tier0 = makeIcon("greyMarker.png")
+# )
+
+# this one makes it clear but idk if we want purple as the color for the map,
+# either way changing this doesnt take long at all
+# icons are from https://www.iconsdb.com/custom-color/map-marker-2-icon.html and are the 32x32 size
+# palettes are from https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=9
+# not sure if 32x32 is going to adapt well to the big screen well have to test on the virtual screen
+
+mapIcons <- iconList(
+  tier5 = makeIcon("altTier5.png"),
+  tier4 = makeIcon("altTier4.png"),
+  tier3 = makeIcon("altTier3.png"),
+  tier2 = makeIcon("altTier2.png"),
+  tier1 = makeIcon("altTier1.png"),
+  tier0 = makeIcon("greyMarker.png")
+)
+
+
 weekdayNums <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
 monthNums <- seq(1, 12)
@@ -407,10 +434,59 @@ server <- function(input, output, session) {
   # we can probably just make a reactive variable with those strings to change it
   # quickly
   # 144->147
+  # output variable allstops
+  # uses default map, to change add the line
+  # addProviderTiles("Esri.WorldImagery") %>%
+  # or 
+  # addProviderTiles("Esri.WorldGrayCanvas") %>%
+  # we can probably just make a reactive variable with those strings to change it
+  # quickly
+  # 144->147
   output$map <- renderLeaflet({
     
+    allData <- allStopsReactive()
+    allDataMap <- data.frame(allData$stationname, allData$rides)
+    allDataMap[ , 'color'] <- NA
+    allDataMap[ , 'lat'] <- NA
+    allDataMap[ , 'long'] <- NA
+    colnames(allDataMap) <- c("stationname", "rides","color","lat","long")
+    
+    for(row in 1:nrow(allDataMap)) {
+      
+      allDataMap[row,"lat"] <- latVector[row]
+      allDataMap[row,"long"] <- longVector[row]
+      
+      tempRides <- allDataMap[row,"rides"]
+      print(tempRides)
+      
+      # These are the cutoffs for colors, these might need tweaking to properly
+      # show changes in the data better but that is a small change
+      if(tempRides > 3000){
+        allDataMap[row,"color"] <- "tier5"
+      }
+      else if(tempRides > 2000){
+        allDataMap[row,"color"] <- "tier4"
+      }
+      else if(tempRides > 1000){
+        allDataMap[row,"color"] <- "tier3"
+      }
+      else if(tempRides > 500){
+        allDataMap[row,"color"] <- "tier2"
+      }
+      else if(tempRides > 250){
+        allDataMap[row,"color"] <- "tier1"
+      }
+      else{
+        allDataMap[row,"color"] <- "tier0"
+      }
+      
+    }
+    View(allDataMap)
+    View(summed)
+    
+    
     #addProviderTiles(theme) %>%
-    leaflet() %>%
+    leaflet(allDataMap) %>%
       addTiles() %>%  
       setView(lng =-87.658323, lat = 41.879036, zoom = 12) %>%
       addTiles("Ersi",group = "Default")%>%
@@ -421,7 +497,13 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = FALSE),
         position = "bottomleft"
       ) %>%
-      addMarkers(lat = latVector[1:147], lng = longVector[1:147], label = nameVector[1:147], layerId = nameVector[1:147])
+      addMarkers(lat = allDataMap$lat, lng = allDataMap$long, label = nameVector[1:148],layerId = nameVector[1:147],icon = ~mapIcons[color]) %>%
+      addLegend("bottomright", 
+                colors =c("#8C8C8C","#8c96c6",  "#8c6bb1", "#88419d", "#810f7c", "#4d004b"),
+                labels= c( "<250", "<500","<1000","<2000","<3000",">3000"),
+                title= "Ridership per Stop",
+                opacity = 1)
+    #addMarkers(lat = latVector[1:148], lng = longVector[1:148], label = nameVector[1:148],layerId = nameVector[1:147])
   })
   
   observeEvent(input$map_marker_click, {
