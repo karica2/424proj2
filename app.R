@@ -182,7 +182,8 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
   
   # interaction quirk: changing the date selector, and subsequently using the 'next day' or 'previous day' button should change the date selected on the date selector.  
   
-  column(width = 9, 
+  column(width = 9,
+         
          # major row 1
          fluidRow(
            column(1, 
@@ -195,22 +196,28 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
                   ),
                   fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "Alphabetical"))
            ),
-           column(11, box(title="All Stop Ridership", width=12, height = "40vh", background = mainThemeColor,
+           column(11, 
+                  fluidRow(h3(textOutput("selectedDayTitle"))),
+                  box(title="All Stop Ridership", width=12, height = "40vh", background = mainThemeColor,
+                          
                           conditionalPanel(condition = "input.useAlphabetical == 'Alphabetical'", 
-                                           plotOutput("allStopsAlphabetical", height = "30vh") ),
+                                           column(11, plotOutput("allStopsAlphabetical", height = "30vh")),
+                                            column(1, box(width = 12, background = mainThemeColor, dataTableOutput("AllStopsTableAlphabetical", height = "30vh")))),
                           conditionalPanel(condition = "input.useAlphabetical == 'Ascending'", 
-                                           plotOutput("allStopsNumeric", height = "30vh") ),
+                                           column(11, plotOutput("allStopsNumeric", height = "30vh")),
+                                            column(1, box(width = 12, background = mainThemeColor, dataTableOutput("AllStopsTableNumeric", height = "30vh")))),
            ))
          ),
          # major row 2
+         
          fluidRow(
            column(1,
                   fluidRow(selectInput(inputId = "currentLine", choices = lineOptions, label = "Select Line")),
                   fluidRow(selectizeInput(inputId = "currentStop", choices = latlong_unique$STATION_NAME, label = "Select Stop")),
-                  fluidRow(textOutput("selectedStopTitle")),
            ),
            column(11, 
                   # for the month
+                  fluidRow(h3(textOutput("selectedStopTitle"))),
                   column(3, box(width = 12, title = "By Month", background = mainThemeColor,
                                 fluidRow(
                                   conditionalPanel(
@@ -277,7 +284,7 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
            
          )
   ),
-  column(width = 3, box(title = "Map of Stops", width = 12, background = mainThemeColor, leafletOutput("map", height="75vh")))
+  column(width = 3, box(title = "Map of Stops", width = 12, background = mainThemeColor, leafletOutput("map", height = "85vh")))
 )
 )
 server <- function(input, output, session) {
@@ -295,10 +302,43 @@ server <- function(input, output, session) {
     updateSelectizeInput(session = session, inputId = "currentStop", choices = getLineValues(input$currentLine), selected = getLineValues(input$currentLine)[1])
   })
   
+  currentDateReactive <- reactive(input$currentDate)
   allStopsReactive <- reactive({ subset(summed, summed$date_ymd == input$currentDate) })
   selectedStopReactive <- reactive({ subset(latlong_unique, latlong_unique$STATION_NAME == input$currentStop) })
   selectedStopDataReactive <- reactive({ subset(summed, summed$station_id == head(latlong_unique[latlong_unique$STATION_NAME == input$currentStop, ], 1)$station_id & summed$year == year(input$currentDate))})
   selectedStopDataYearly <- reactive({ subset(summed, summed$station_id == head(latlong_unique[latlong_unique$STATION_NAME == input$currentStop, ], 1)$station_id) })
+  
+  ############## PLOT CODE ##############
+  
+  
+  output$AllStopsTableNumeric <- DT::renderDataTable(DT::datatable({
+  
+    allData <- allStopsReactive()
+    allDataSorted <- data.frame(allData$stationname, allData$rides)
+    colnames(allDataSorted) <- c("stationname", "rides")
+    allDataSorted <- allDataSorted[order(-allDataSorted$rides), ]
+    allDataSorted$stationname <- factor(allDataSorted$stationname, levels = allDataSorted$stationname) 
+    colnames(allDataSorted) <- c("Station Name", "rides")
+    
+    data <- allDataSorted
+    data
+    
+  }, options = list(pageLength = 10, searching = FALSE), rownames = FALSE ))
+  
+  output$AllStopsTableAlphabetical <- DT::renderDataTable(DT::datatable({
+    
+    allData <- allStopsReactive()
+    allData <- allData[order(allData$stationname), ]
+    allDataSorted <- data.frame(allData$stationname, allData$rides)
+    # allDataSorted <- allDataSorted[order(allDataSorted$allData.stationname), ]
+    # print(allDataSorted)
+    colnames(allDataSorted) <- c("Station Name", "rides")    
+    # allDataSorted <- allDataSorted[order(-allDataSorted$rides), ]
+    # allDataSorted$stationname <- factor(allDataSorted$stationname, levels = allDataSorted$stationname) 
+    data <- allDataSorted
+    data
+    
+  }, options = list(pageLength = 10, searching = FALSE), rownames = FALSE ))
   
   output$allStopsNumeric <- renderPlot({
     
@@ -321,9 +361,19 @@ server <- function(input, output, session) {
   
   output$selectedStopTitle <- renderText({
     current_stop <- selectedStopReactive()
-    paste("Ridership for ", input$currentStop)
+    current_date <- currentDateReactive()
+    current_year <- year(current_date)
+    # print(current_stop)
+    paste("Ridership for ", current_stop$STATION_NAME, " for ", current_year)
   })
   
+  output$selectedDayTitle <- renderText({
+    current_stop <- selectedStopReactive()
+    current_date <- currentDateReactive()
+    day_of_week <- weekdays(current_date)
+    
+    paste("Ridership for ", day_of_week, " ", current_date)
+  })
   output$MonthlyPlot <- renderPlot({
     
     monthNums <- seq(1, 12)
@@ -427,6 +477,9 @@ server <- function(input, output, session) {
     
   })
   
+  ############## LEAFLET CODE ##############
+  
+  
   # uses default map, to change add the line
   # addProviderTiles("Esri.WorldImagery") %>%
   # or 
@@ -450,14 +503,14 @@ server <- function(input, output, session) {
     allDataMap[ , 'lat'] <- NA
     allDataMap[ , 'long'] <- NA
     colnames(allDataMap) <- c("stationname", "rides","color","lat","long")
-    
+    # print(allDataMap)
     for(row in 1:nrow(allDataMap)) {
       
       allDataMap[row,"lat"] <- latVector[row]
       allDataMap[row,"long"] <- longVector[row]
       
       tempRides <- allDataMap[row,"rides"]
-      print(tempRides)
+      # print(tempRides)
       
       # These are the cutoffs for colors, these might need tweaking to properly
       # show changes in the data better but that is a small change
@@ -481,8 +534,8 @@ server <- function(input, output, session) {
       }
       
     }
-    View(allDataMap)
-    View(summed)
+    # View(allDataMap)
+    # View(summed)
     
     
     #addProviderTiles(theme) %>%
