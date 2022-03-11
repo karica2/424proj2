@@ -152,111 +152,111 @@ for(row in 1:nrow(mapData)) {
 # TODO: make gradient in map for higher vs lower values
 
 ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar(disable = TRUE, collapsed = FALSE), dashboardBody(
-    
-    # interaction quirk: changing the date selector, and subsequently using the 'next day' or 'previous day' button should change the date selected on the date selector.  
-    
-    column(width = 9, 
-           # major row 1
-           fluidRow(
-             column(2, 
-                    fluidRow("Written by Kenan Arica and Kevin Elliott for CS 424 SP22. 
+  
+  # interaction quirk: changing the date selector, and subsequently using the 'next day' or 'previous day' button should change the date selected on the date selector.  
+  
+  column(width = 9, 
+         # major row 1
+         fluidRow(
+           column(1, 
+                  fluidRow(box(width = 12, height = "25vh", "Written by Kenan Arica and Kevin Elliott for CS 424 SP22. 
                     This dashboard is designed to allow users to CTA stop ridership by day, and by stop, with the leaflet giving geospatial capabilites.
-                    Dataset provided by the CTA, and can be found at the Chicago Data Portal."),
-                    fluidRow(dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
-                    ),
-                    fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
-                      ),
-                    fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "Alphabetical"))
-             ),
-             column(10, box(title="All Stop Ridership", width=12, height = "40vh", background = mainThemeColor,
-                            conditionalPanel(condition = "input.useAlphabetical == 'Alphabetical'", 
-                                             plotOutput("allStopsAlphabetical", height = "30vh") ),
-                            conditionalPanel(condition = "input.useAlphabetical == 'Ascending'", 
-                                             plotOutput("allStopsNumeric", height = "30vh") ),
-                            ))
+                    Dataset provided by the CTA, and can be found at the Chicago Data Portal.")),
+                  fluidRow(dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
+                  ),
+                  fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
+                  ),
+                  fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "Alphabetical"))
            ),
-           # major row 2
-           fluidRow(
-             column(2,
-                    fluidRow(selectInput(inputId = "currentLine", choices = lineOptions, label = "Select Line")),
-                    fluidRow(selectizeInput(inputId = "currentStop", choices = latlong_unique$STATION_NAME, label = "Select Stop")),
-                    fluidRow(textOutput("selectedStopTitle")),
-                    ),
-             column(10, 
-                    # for the month
-                    column(3, box(width = 12, title = "By Month", background = mainThemeColor,
-                                  fluidRow(
-                                    conditionalPanel(
-                                      condition = "input.monthly_table_toggle == 'No'",
-                                      column(width = 12, plotOutput("MonthlyPlot", height = "35vh"))
-                                    ),
-                                    conditionalPanel(
-                                      condition = "input.monthly_table_toggle == 'Yes'",
-                                      column(width = 12, dataTableOutput("MonthlyTable", height="35vh"))
-                                      ),
-                                    
-                                    ),
-                                  fluidRow(radioButtons(input="monthly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
-                                  )
-                           ),
-                    # for the year
-                    column(3, box(width = 12, title = "By Year", background = mainThemeColor,
-                                  fluidRow(
-                                    conditionalPanel(
-                                      condition = "input.yearly_table_toggle == 'No'",
-                                      column(width = 12, plotOutput("YearlyPlot", height = "35vh"))
-                                    ),
-                                    conditionalPanel(
-                                      condition = "input.yearly_table_toggle == 'Yes'",
-                                      column(width = 12, dataTableOutput("YearlyTable", height="35vh"))
-                                    ),
-
+           column(11, box(title="All Stop Ridership", width=12, height = "40vh", background = mainThemeColor,
+                          conditionalPanel(condition = "input.useAlphabetical == 'Alphabetical'", 
+                                           plotOutput("allStopsAlphabetical", height = "30vh") ),
+                          conditionalPanel(condition = "input.useAlphabetical == 'Ascending'", 
+                                           plotOutput("allStopsNumeric", height = "30vh") ),
+           ))
+         ),
+         # major row 2
+         fluidRow(
+           column(1,
+                  fluidRow(selectInput(inputId = "currentLine", choices = lineOptions, label = "Select Line")),
+                  fluidRow(selectizeInput(inputId = "currentStop", choices = latlong_unique$STATION_NAME, label = "Select Stop")),
+                  fluidRow(textOutput("selectedStopTitle")),
+           ),
+           column(11, 
+                  # for the month
+                  column(3, box(width = 12, title = "By Month", background = mainThemeColor,
+                                fluidRow(
+                                  conditionalPanel(
+                                    condition = "input.monthly_table_toggle == 'No'",
+                                    column(width = 12, plotOutput("MonthlyPlot", height = "35vh"))
                                   ),
-                                  fluidRow(radioButtons(input="yearly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
-                    )),
-                    column(3, box(width = 12, title = "By Day", background = mainThemeColor,
-                                  fluidRow(
-                                    conditionalPanel(
-                                      condition = "input.daily_table_toggle == 'No'",
-                                      column(width = 12, plotOutput("DailyPlot", height = "35vh"))
-                                    ),
-                                    conditionalPanel(
-                                      condition = "input.daily_table_toggle == 'Yes'",
-                                      column(width = 12, dataTableOutput("DailyTable", height="35vh"))
-                                    ),
-
+                                  conditionalPanel(
+                                    condition = "input.monthly_table_toggle == 'Yes'",
+                                    column(width = 12, dataTableOutput("MonthlyTable", height="35vh"))
                                   ),
-                                  fluidRow(radioButtons(input="daily_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
-                    )),
-                    column(3, box(width = 12, title = "By Day", background = mainThemeColor,
-                                  fluidRow(
-                                    conditionalPanel(
-                                      condition = "input.weekly_table_toggle == 'No'",
-                                      column(width = 12, plotOutput("WeekdayPlot", height = "35vh"))
-                                    ),
-                                    conditionalPanel(
-                                      condition = "input.weekly_table_toggle == 'Yes'",
-                                      column(width = 12, dataTableOutput("WeeklyTable", height="35vh"))
-                                    ),
-                                    
-                                  ),
-                                  fluidRow(radioButtons(input="weekly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No")) # find the comma
                                   
-                    ))
-                    # column(3, box(width = 12, title = "By Year", background = mainThemeColor, plotOutput("YearlyPlot", height="35vh"))), 
-                    #column(3, box(width = 12, title = "By Day", background = mainThemeColor, plotOutput("DailyPlot", height="35vh"))), 
-                    #column(3, box(width = 12, title = "By Weekday", background = mainThemeColor, plotOutput("WeekdayPlot", height="35vh"))), 
-             )
-            
+                                ),
+                                fluidRow(box(width = 12, background = mainThemeColor, radioButtons(input="monthly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No"))) # find the comma
+                  )
+                  ),
+                  # for the year
+                  column(3, box(width = 12, title = "By Year", background = mainThemeColor,
+                                fluidRow(
+                                  conditionalPanel(
+                                    condition = "input.yearly_table_toggle == 'No'",
+                                    column(width = 12, plotOutput("YearlyPlot", height = "35vh"))
+                                  ),
+                                  conditionalPanel(
+                                    condition = "input.yearly_table_toggle == 'Yes'",
+                                    column(width = 12, dataTableOutput("YearlyTable", height="35vh"))
+                                  ),
+                                  
+                                ),
+                                fluidRow(box(width = 12, background = mainThemeColor, radioButtons(input="yearly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No"))) # find the comma
+                  )),
+                  column(4, box(width = 12, title = "By Day", background = mainThemeColor,
+                                fluidRow(
+                                  conditionalPanel(
+                                    condition = "input.daily_table_toggle == 'No'",
+                                    column(width = 12, plotOutput("DailyPlot", height = "35vh"))
+                                  ),
+                                  conditionalPanel(
+                                    condition = "input.daily_table_toggle == 'Yes'",
+                                    column(width = 12, dataTableOutput("DailyTable", height="35vh"))
+                                  ),
+                                  
+                                ),
+                                fluidRow(box(width = 12, background = mainThemeColor, radioButtons(input="daily_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No"))) # find the comma
+                  )),
+                  column(2, box(width = 12, title = "By Week", background = mainThemeColor,
+                                fluidRow(
+                                  conditionalPanel(
+                                    condition = "input.weekly_table_toggle == 'No'",
+                                    column(width = 12, plotOutput("WeekdayPlot", height = "35vh"))
+                                  ),
+                                  conditionalPanel(
+                                    condition = "input.weekly_table_toggle == 'Yes'",
+                                    column(width = 12, dataTableOutput("WeeklyTable", height="35vh"))
+                                  ),
+                                  
+                                ),
+                                fluidRow(box(width = 12, background = mainThemeColor, radioButtons(input="weekly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No"))) # find the comma
+                                
+                  ))
+                  # column(3, box(width = 12, title = "By Year", background = mainThemeColor, plotOutput("YearlyPlot", height="35vh"))), 
+                  #column(3, box(width = 12, title = "By Day", background = mainThemeColor, plotOutput("DailyPlot", height="35vh"))), 
+                  #column(3, box(width = 12, title = "By Weekday", background = mainThemeColor, plotOutput("WeekdayPlot", height="35vh"))), 
            )
-    ),
-    column(width = 3, box(title = "Map of Stops", width = 12, background = mainThemeColor, leafletOutput("map", height="75vh")))
-  )
+           
+         )
+  ),
+  column(width = 3, box(title = "Map of Stops", width = 12, background = mainThemeColor, leafletOutput("map", height="75vh")))
+)
 )
 server <- function(input, output, session) {
   
   map = createLeafletMap(session, 'map')
-
+  
   observeEvent(input$nextDay, {
     updateDateInput(session = session, inputId = "currentDate", value = as.Date(input$currentDate) + 1)
   })
@@ -283,7 +283,7 @@ server <- function(input, output, session) {
     
     ggplot(data=allDataSorted, aes(x=stationname, y=rides)) + geom_bar(stat = "identity", fill="#098CF9") + scale_y_continuous("Rides", labels = scales::comma) + theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) + labs(x="Station")
     
-    })
+  })
   
   output$allStopsAlphabetical <- renderPlot({
     
@@ -293,9 +293,9 @@ server <- function(input, output, session) {
   })
   
   output$selectedStopTitle <- renderText({
-      current_stop <- selectedStopReactive()
-      paste("Ridership for ", input$currentStop)
-    })
+    current_stop <- selectedStopReactive()
+    paste("Ridership for ", input$currentStop)
+  })
   
   output$MonthlyPlot <- renderPlot({
     
@@ -311,14 +311,14 @@ server <- function(input, output, session) {
     
     current_stop <- selectedStopDataReactive()
     
-      month_table_df <- data.frame(Month=character(), Rides=integer())
-      for(mon in months) {
-        num <- with(current_stop, sum(rides[month_char == mon]))
-        rowdf <- data.frame(Month=mon, Rides=num)
-        month_table_df <- rbind(month_table_df, rowdf)
-      }
-      data <- month_table_df
-      data
+    month_table_df <- data.frame(Month=character(), Rides=integer())
+    for(mon in months) {
+      num <- with(current_stop, sum(rides[month_char == mon]))
+      rowdf <- data.frame(Month=mon, Rides=num)
+      month_table_df <- rbind(month_table_df, rowdf)
+    }
+    data <- month_table_df
+    data
   }, options = list(pageLength = 12, searching = FALSE), rownames = FALSE))
   
   output$YearlyPlot <- renderPlot({
@@ -349,12 +349,16 @@ server <- function(input, output, session) {
   
   output$WeeklyTable <- DT::renderDataTable(DT::datatable({
     
-    current_stop <- selectedStopDataYearly()
+    current_stop <- selectedStopDataReactive()
     
     weekday_table_df <- data.frame(Weekday=character(), Rides=integer())
     
+    
     for(wkday in weekdayNums) {
-      num <- with(current_stop, sum(rides[day_of_week == wkday]))
+      # print(wkday)
+      rides <- current_stop[current_stop$day_of_week == wkday, ]$rides
+      # print(rides)
+      num <- sum(rides)
       rowdf <- data.frame(Weekday=wkday, Rides=num)
       weekday_table_df <- rbind(weekday_table_df, rowdf)
     }
@@ -370,7 +374,7 @@ server <- function(input, output, session) {
     
     
   })
-
+  
   output$DailyTable <- DT::renderDataTable(DT::datatable({
     
     current_stop <- selectedStopDataReactive()
@@ -388,7 +392,7 @@ server <- function(input, output, session) {
     data
     
   }, options = list(pageLength = 10, searching = FALSE), rownames = FALSE))  
-
+  
   output$WeekdayPlot <- renderPlot({
     
     current_stop <- selectedStopDataReactive()
@@ -417,7 +421,7 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = FALSE),
         position = "bottomleft"
       ) %>%
-      addMarkers(lat = latVector[1:148], lng = longVector[1:148], label = nameVector[1:148], layerId = nameVector[1:147])
+      addMarkers(lat = latVector[1:147], lng = longVector[1:147], label = nameVector[1:147], layerId = nameVector[1:147])
   })
   
   observeEvent(input$map_marker_click, {
@@ -448,7 +452,6 @@ server <- function(input, output, session) {
   
 }
 shinyApp(ui, server)
-
 # TODO: 
 # ur mom lol
 # Adapt Proj1 code to just be 4 output functions that each yield a table. 
