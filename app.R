@@ -114,8 +114,16 @@ index = 0
 for(row in 1:nrow(mapData)) {
 
   tempString <- mapData[row,"loc"]
-  latString <-substring(tempString,2,10)
-  longString <- substring(tempString,13,22)
+  tempString <- substring(tempString,2,nchar(tempString)-1)
+  
+  latString <- sub(",.*", "",tempString)
+  #print(testLatString)
+  
+  longString <- sub(".*,", "",tempString)
+  #print(testLongString)
+  
+  #latString <-substring(tempString,2,10)
+  #longString <- substring(tempString,13,22)
 
   latVector[row]  <- as.numeric(latString)
   longVector[row] <- as.numeric(longString)
@@ -137,7 +145,11 @@ for(row in 1:nrow(mapData)) {
 
 }
 
+
+
 ##################
+# TODO: find why ohare is not on map
+# TODO: make gradient in map for higher vs lower values
 
 ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar(disable = TRUE, collapsed = FALSE), dashboardBody(
     
@@ -405,7 +417,7 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = FALSE),
         position = "bottomleft"
       ) %>%
-      addMarkers(lat = latVector[1:147], lng = longVector[1:147], label = nameVector[1:147], layerId = nameVector[1:147])
+      addMarkers(lat = latVector[1:148], lng = longVector[1:148], label = nameVector[1:148], layerId = nameVector[1:147])
   })
   
   observeEvent(input$map_marker_click, {
