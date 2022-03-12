@@ -32,7 +32,7 @@ latlong_unique <- latlong_unique[order(latlong_unique$STATION_NAME), ]
 lineOptions <- c("All", "Blue", "Red", "Green", "Brown", "Purple", "Purple Express", "Pink", "Orange", "Yellow")
 
 getLineValues <- function(lineColor) { 
-
+  
   lineValues <- switch(
     lineColor,
     "All" = latlong_unique$STATION_NAME,
@@ -47,7 +47,7 @@ getLineValues <- function(lineColor) {
     "Yellow" = latlong_unique[latlong_unique$Y == "true", ]$STATION_NAME
   )
   return(lineValues)
-  }
+}
 
 
 
@@ -66,7 +66,7 @@ allStops <- data.frame(latlong_unique$station_id, latlong_unique$STATION_NAME)
 
 #### kevin section
 
-# unused for now
+# unused markers for coloring markers for their line colors
 # mapIcons <- iconList(
 #   red = makeIcon("redMarker.png"),
 #   blue = makeIcon("blueMarker.png"),
@@ -80,32 +80,17 @@ allStops <- data.frame(latlong_unique$station_id, latlong_unique$STATION_NAME)
 #   grey = makeIcon("greyMarker.png")
 # )
 
-# this version of the icons imo is way too light on the lower end
-# makes it very hard to find some stops
-# mapIcons <- iconList(
-#   tier5 = makeIcon("tier5.png"),
-#   tier4 = makeIcon("tier4.png"),
-#   tier3 = makeIcon("tier3.png"),
-#   tier2 = makeIcon("tier2.png"),
-#   tier1 = makeIcon("tier1.png"),
-#   tier0 = makeIcon("greyMarker.png")
-# )
-
-# this one makes it clear but idk if we want purple as the color for the map,
-# either way changing this doesnt take long at all
+# updated markers start at a darker gradient so the lowest tier has increased visibility
 # icons are from https://www.iconsdb.com/custom-color/map-marker-2-icon.html and are the 32x32 size
 # palettes are from https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=9
-# not sure if 32x32 is going to adapt well to the big screen well have to test on the virtual screen
-
 mapIcons <- iconList(
-  tier5 = makeIcon("altTier5.png"),
-  tier4 = makeIcon("altTier4.png"),
-  tier3 = makeIcon("altTier3.png"),
-  tier2 = makeIcon("altTier2.png"),
-  tier1 = makeIcon("altTier1.png"),
+  tier5 = makeIcon("tier5.png"),
+  tier4 = makeIcon("tier4.png"),
+  tier3 = makeIcon("tier3.png"),
+  tier2 = makeIcon("tier2.png"),
+  tier1 = makeIcon("tier1.png"),
   tier0 = makeIcon("greyMarker.png")
 )
-
 
 weekdayNums <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
@@ -116,16 +101,15 @@ months <- month.abb[monthNums]
 mapData <- data.frame(summed$loc, summed$stationname,summed$station_id)
 mapData <- unique.data.frame(mapData)
 colnames(mapData) <- c("loc","stationname","station_id")
-#View(mapData)
 
 mainThemeColor = "blue"
 
+# used for static map placement, unused for reactive placement of maps
 latVector <- vector(mode="numeric", length=0)
 longVector <- vector(mode="numeric", length=0)
 nameVector <- vector(mode = "character", length=0)
 idVector <- vector(mode = "character", length=0)
 colorVector <- vector(mode = "character", length=0)
-
 
 latString = ""
 longString = ""
@@ -135,26 +119,20 @@ colorString = ""
 idString = ""
 index = 0
 
-# for loop just grabs each value and adds it to the corresponding vector
-# the lat long strings are hard sub stringed to those chars so if one is in a
-# different format it probably will be discarded or plotted way off
+# set up the static vectors for first time placement
 for(row in 1:nrow(mapData)) {
-
+  
   tempString <- mapData[row,"loc"]
+  # remove ( ) at the start and end 
   tempString <- substring(tempString,2,nchar(tempString)-1)
-  
+  # everything before the ,
   latString <- sub(",.*", "",tempString)
-  #print(testLatString)
-  
+  # everything after the ,
   longString <- sub(".*,", "",tempString)
-  #print(testLongString)
   
-  #latString <-substring(tempString,2,10)
-  #longString <- substring(tempString,13,22)
-
   latVector[row]  <- as.numeric(latString)
   longVector[row] <- as.numeric(longString)
-
+  
   tempNameString <- mapData[row,"stationname"]
   nameString <- tempNameString
   nameVector[row] <- nameString
@@ -162,21 +140,11 @@ for(row in 1:nrow(mapData)) {
   tempIdString <- mapData[row,"station_id"]
   idString <- tempIdString
   idVector[row] <- idString
-
-  # tempColorString <- mapData[row,"color"]
-  # colorString <- tempColorString
-  # colorVector[row] <- colorString
-  # #print(colorVector[row])
-
-  index <- index + 1
-
 }
 
 
 
 ##################
-# TODO: find why ohare is not on map
-# TODO: make gradient in map for higher vs lower values
 
 ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar(disable = TRUE, collapsed = FALSE), dashboardBody(
   
@@ -199,14 +167,14 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
            column(11, 
                   fluidRow(h3(textOutput("selectedDayTitle"))),
                   box(title="All Stop Ridership", width=12, height = "40vh", background = mainThemeColor,
-                          
-                          conditionalPanel(condition = "input.useAlphabetical == 'Alphabetical'", 
-                                           column(11, plotOutput("allStopsAlphabetical", height = "30vh")),
-                                            column(1, box(width = 12, background = mainThemeColor, dataTableOutput("AllStopsTableAlphabetical", height = "30vh")))),
-                          conditionalPanel(condition = "input.useAlphabetical == 'Ascending'", 
-                                           column(11, plotOutput("allStopsNumeric", height = "30vh")),
-                                            column(1, box(width = 12, background = mainThemeColor, dataTableOutput("AllStopsTableNumeric", height = "30vh")))),
-           ))
+                      
+                      conditionalPanel(condition = "input.useAlphabetical == 'Alphabetical'", 
+                                       column(11, plotOutput("allStopsAlphabetical", height = "30vh")),
+                                       column(1, box(width = 12, background = mainThemeColor, dataTableOutput("AllStopsTableAlphabetical", height = "30vh")))),
+                      conditionalPanel(condition = "input.useAlphabetical == 'Ascending'", 
+                                       column(11, plotOutput("allStopsNumeric", height = "30vh")),
+                                       column(1, box(width = 12, background = mainThemeColor, dataTableOutput("AllStopsTableNumeric", height = "30vh")))),
+                  ))
          ),
          # major row 2
          
@@ -312,7 +280,7 @@ server <- function(input, output, session) {
   
   
   output$AllStopsTableNumeric <- DT::renderDataTable(DT::datatable({
-  
+    
     allData <- allStopsReactive()
     allDataSorted <- data.frame(allData$stationname, allData$rides)
     colnames(allDataSorted) <- c("stationname", "rides")
@@ -480,40 +448,38 @@ server <- function(input, output, session) {
   ############## LEAFLET CODE ##############
   
   
-  # uses default map, to change add the line
-  # addProviderTiles("Esri.WorldImagery") %>%
-  # or 
-  # addProviderTiles("Esri.WorldGrayCanvas") %>%
-  # we can probably just make a reactive variable with those strings to change it
-  # quickly
-  # 144->147
-  # output variable allstops
-  # uses default map, to change add the line
-  # addProviderTiles("Esri.WorldImagery") %>%
-  # or 
-  # addProviderTiles("Esri.WorldGrayCanvas") %>%
-  # we can probably just make a reactive variable with those strings to change it
-  # quickly
-  # 144->147
+  # map is responsible for creating the initial map as well as updating it when
+  # a marker is pressed or a date is changed, along with any legends and map controls
   output$map <- renderLeaflet({
     
+    # get the data from the reactive variable selected by user
     allData <- allStopsReactive()
-    allDataMap <- data.frame(allData$stationname, allData$rides)
+    allDataMap <- data.frame(allData$stationname, allData$rides, allData$loc)
     allDataMap[ , 'color'] <- NA
     allDataMap[ , 'lat'] <- NA
     allDataMap[ , 'long'] <- NA
-    colnames(allDataMap) <- c("stationname", "rides","color","lat","long")
-    # print(allDataMap)
+    colnames(allDataMap) <- c("stationname", "rides","loc","color","lat","long")
+    
+    # this loop takes the loc column and changes it so it can be supplied to the map
+    for(row in 1:nrow(allData)) {
+      
+      tempString <- allData[row,"loc"]
+      tempString <- substring(tempString,2,nchar(tempString)-1)
+
+      latString <- sub(",.*", "",tempString)
+      longString <- sub(".*,", "",tempString)
+
+      allDataMap[row,"lat"] <- as.numeric(latString)
+      allDataMap[row,"long"] <- as.numeric(longString)
+    }
+  
+    # this loop assigns tiers to each stops ridership so the gradient can be displayed
     for(row in 1:nrow(allDataMap)) {
       
-      allDataMap[row,"lat"] <- latVector[row]
-      allDataMap[row,"long"] <- longVector[row]
-      
       tempRides <- allDataMap[row,"rides"]
-      # print(tempRides)
+      print(tempRides)
       
-      # These are the cutoffs for colors, these might need tweaking to properly
-      # show changes in the data better but that is a small change
+      # Tier 5 is the darkest and tier0 is a gray 
       if(tempRides > 3000){
         allDataMap[row,"color"] <- "tier5"
       }
@@ -534,11 +500,14 @@ server <- function(input, output, session) {
       }
       
     }
-    # View(allDataMap)
+    View(allDataMap)
     # View(summed)
     
-    
-    #addProviderTiles(theme) %>%
+    # First the view is set a little west of the center of the city with a zoom that covers most stops
+    # then the default map is applied with the other options set as groups
+    # a control box is added which allows swapping of said groups
+    # markers are added from the prepared dataframe, which takes each value in the specified column
+    # finally a legend is added for the color gradient
     leaflet(allDataMap) %>%
       addTiles() %>%  
       setView(lng =-87.658323, lat = 41.879036, zoom = 12) %>%
@@ -550,18 +519,17 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = FALSE),
         position = "bottomleft"
       ) %>%
-      addMarkers(lat = allDataMap$lat, lng = allDataMap$long, label = nameVector[1:148],layerId = nameVector[1:147],icon = ~mapIcons[color]) %>%
+      addMarkers(lat = allDataMap$lat, lng = allDataMap$long, label = allDataMap$stationname,layerId = allDataMap$stationname,icon = ~mapIcons[color]) %>%
       addLegend("bottomright", 
-                colors =c("#8C8C8C","#8c96c6",  "#8c6bb1", "#88419d", "#810f7c", "#4d004b"),
+                colors =c("#8C8C8C","#fc8d59",  "#ef6548", "#d7301f", "#b30000", "#7f0000"),
                 labels= c( "<250", "<500","<1000","<2000","<3000",">3000"),
                 title= "Ridership per Stop",
                 opacity = 1)
-    #addMarkers(lat = latVector[1:148], lng = longVector[1:148], label = nameVector[1:148],layerId = nameVector[1:147])
   })
   
+  # map marker click shows which stop is pressed on click
   observeEvent(input$map_marker_click, {
     click <- input$map_marker_click
-    #text<-paste("Lattitude ", click$lat, "Longtitude ", click$lng, "Name ", click$id)
     text<-paste("Now displaying data for: ", click$id)
     
     proxy <- leafletProxy("map")
@@ -569,9 +537,9 @@ server <- function(input, output, session) {
       addPopups(click$lng, click$lat, text)
   })
   
+  # second map marker click is responsible for updating which station is being
+  # focused on after the user presses on it
   observeEvent(input$map_marker_click, {
-    
-    # TODO: if we ever switch to stop names using latlong this will break
     
     click <- input$map_marker_click
     stop_name <- click$id
@@ -587,8 +555,3 @@ server <- function(input, output, session) {
   
 }
 shinyApp(ui, server)
-# TODO: 
-# ur mom lol
-# Adapt Proj1 code to just be 4 output functions that each yield a table. 
-
-
