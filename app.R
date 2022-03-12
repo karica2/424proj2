@@ -10,22 +10,24 @@ library(DT)
 library(grid)
 library(scales)
 library(leaflet)
-# library(tidyverse)
 
+# reading our location entries
 latlong <- read.table(file = "latlong.tsv", sep = "\t", header = TRUE, quote = "" , fill=TRUE, row.names = NULL)
 
-# for some reason these lines of code only work when the current dir is datafiles. 
-# setwd("datafiles")
 
 # NOTE: I DID NOT COME UP WITH THE FOLLOWING TWO LINES OF CODE. I USED A SOLUTION BY leerssej
 # TAKEN FROM: https://stackoverflow.com/questions/11433432/how-to-import-multiple-csv-files-at-once
 # ALL CREDIT GOES TO THE AUTHOR. 
 # I checked with the professor if I could use this solution in a piazza post and got the green light. 
+
 files = list.files("datafiles/", ".csv", full.names = TRUE)
-# READ: for testing purposes, you only need to run this code once, as it takes like 13-15 seconds. once you have the data in your env, you can comment it out. 
 summed <- do.call(rbind, lapply(files, function(x) read.csv(x, stringsAsFactors = FALSE)))
+
+
+# normalizing these column names to make life easier
 names(latlong)[names(latlong)=="MAP_ID"] <- "station_id"
 
+# these latlong files have 2 entries for each stop, but we only need one since they have the same latlong
 latlong_unique <-  latlong[!duplicated(latlong$station_id), ]
 latlong_unique <- latlong_unique[order(latlong_unique$STATION_NAME), ]
 
@@ -48,7 +50,6 @@ getLineValues <- function(lineColor) {
   )
   return(lineValues)
 }
-
 
 
 # dataframes that hold all rows pertaining to their own lines. we probably wont need them, but not bad to have. 
@@ -92,8 +93,9 @@ mapIcons <- iconList(
   tier0 = makeIcon("greyMarker.png")
 )
 
-weekdayNums <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
+# vectors for graph using
+weekdayNums <- c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 monthNums <- seq(1, 12)
 months <- month.abb[monthNums]
 
@@ -102,6 +104,7 @@ mapData <- data.frame(summed$loc, summed$stationname,summed$station_id)
 mapData <- unique.data.frame(mapData)
 colnames(mapData) <- c("loc","stationname","station_id")
 
+# change this variable to modify the color of the interface
 mainThemeColor = "blue"
 
 # used for static map placement, unused for reactive placement of maps
@@ -148,21 +151,16 @@ for(row in 1:nrow(mapData)) {
 
 ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar(disable = TRUE, collapsed = FALSE), dashboardBody(
   
-  # interaction quirk: changing the date selector, and subsequently using the 'next day' or 'previous day' button should change the date selected on the date selector.  
-  
   column(width = 9,
          
          # major row 1
          fluidRow(
            column(1, 
                   fluidRow(box(width = 12, height = "25vh", "Written by Kenan Arica and Kevin Elliott for CS 424 SP22. 
-                    This dashboard is designed to allow users to CTA stop ridership by day, and by stop, with the leaflet giving geospatial capabilites.
-                    Dataset provided by the CTA, and can be found at the Chicago Data Portal.")),
-                  fluidRow(dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
-                  ),
-                  fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
-                  ),
-                  fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "Alphabetical"))
+                    This dashboard is designed to allow users to view CTA stop ridership by day, and by stop, with the leaflet giving geospatial capabilites.
+                    Dataset provided by the CTA, and can be found at the Chicago Data Portal. Links: 
+                               https://data.cityofchicago.org/Transportation/CTA-System-Information-List-of-L-Stops/8pix-ypme, https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Daily-Totals/5neh-572f")),
+
            ),
            column(11, 
                   fluidRow(h3(textOutput("selectedDayTitle"))),
@@ -182,6 +180,11 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
            column(1,
                   fluidRow(selectInput(inputId = "currentLine", choices = lineOptions, label = "Select Line")),
                   fluidRow(selectizeInput(inputId = "currentStop", choices = latlong_unique$STATION_NAME, label = "Select Stop")),
+                  fluidRow(dateInput(inputId = "currentDate", label = "current date", value = "2021-08-23", min = "2000-01-01", max="2021-12-31")
+                  ),
+                  fluidRow(column(width = 6, actionButton(inputId = "prevDay", "◄ Previous Day ")), column(width = 6, actionButton(inputId = "nextDay", "Next Day ►"))
+                  ),
+                  fluidRow(radioButtons(inputId = "useAlphabetical", choices = c("Alphabetical", "Ascending"), label = "Order by:", selected = "Alphabetical"))
            ),
            column(11, 
                   # for the month
@@ -216,6 +219,7 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
                                 ),
                                 fluidRow(box(width = 12, background = mainThemeColor, radioButtons(input="yearly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No"))) # find the comma
                   )),
+                  # by day
                   column(4, box(width = 12, title = "By Day", background = mainThemeColor,
                                 fluidRow(
                                   conditionalPanel(
@@ -230,6 +234,7 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
                                 ),
                                 fluidRow(box(width = 12, background = mainThemeColor, radioButtons(input="daily_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No"))) # find the comma
                   )),
+                  # by week
                   column(2, box(width = 12, title = "By Week", background = mainThemeColor,
                                 fluidRow(
                                   conditionalPanel(
@@ -245,9 +250,6 @@ ui <- dashboardPage(dashboardHeader(title = "CS424 Project 2"), dashboardSidebar
                                 fluidRow(box(width = 12, background = mainThemeColor, radioButtons(input="weekly_table_toggle", label="Show table", choices=c("Yes", "No"), selected = "No"))) # find the comma
                                 
                   ))
-                  # column(3, box(width = 12, title = "By Year", background = mainThemeColor, plotOutput("YearlyPlot", height="35vh"))), 
-                  #column(3, box(width = 12, title = "By Day", background = mainThemeColor, plotOutput("DailyPlot", height="35vh"))), 
-                  #column(3, box(width = 12, title = "By Weekday", background = mainThemeColor, plotOutput("WeekdayPlot", height="35vh"))), 
            )
            
          )
@@ -259,6 +261,7 @@ server <- function(input, output, session) {
   
   map = createLeafletMap(session, 'map')
   
+  # these observeEvent listeners update our other inputs when one of them changes. neat stuff
   observeEvent(input$nextDay, {
     updateDateInput(session = session, inputId = "currentDate", value = as.Date(input$currentDate) + 1)
   })
@@ -270,6 +273,7 @@ server <- function(input, output, session) {
     updateSelectizeInput(session = session, inputId = "currentStop", choices = getLineValues(input$currentLine), selected = getLineValues(input$currentLine)[1])
   })
   
+  # all of the reactives we use
   currentDateReactive <- reactive(input$currentDate)
   allStopsReactive <- reactive({ subset(summed, summed$date_ymd == input$currentDate) })
   selectedStopReactive <- reactive({ subset(latlong_unique, latlong_unique$STATION_NAME == input$currentStop) })
@@ -298,11 +302,7 @@ server <- function(input, output, session) {
     allData <- allStopsReactive()
     allData <- allData[order(allData$stationname), ]
     allDataSorted <- data.frame(allData$stationname, allData$rides)
-    # allDataSorted <- allDataSorted[order(allDataSorted$allData.stationname), ]
-    # print(allDataSorted)
     colnames(allDataSorted) <- c("Station Name", "rides")    
-    # allDataSorted <- allDataSorted[order(-allDataSorted$rides), ]
-    # allDataSorted$stationname <- factor(allDataSorted$stationname, levels = allDataSorted$stationname) 
     data <- allDataSorted
     data
     
@@ -331,17 +331,18 @@ server <- function(input, output, session) {
     current_stop <- selectedStopReactive()
     current_date <- currentDateReactive()
     current_year <- year(current_date)
-    # print(current_stop)
     paste("Ridership for ", current_stop$STATION_NAME, " for ", current_year)
+    
   })
   
   output$selectedDayTitle <- renderText({
     current_stop <- selectedStopReactive()
     current_date <- currentDateReactive()
     day_of_week <- weekdays(current_date)
-    
     paste("Ridership for ", day_of_week, " ", current_date)
-  })
+
+    })
+  
   output$MonthlyPlot <- renderPlot({
     
     monthNums <- seq(1, 12)
@@ -400,9 +401,7 @@ server <- function(input, output, session) {
     
     
     for(wkday in weekdayNums) {
-      # print(wkday)
       rides <- current_stop[current_stop$day_of_week == wkday, ]$rides
-      # print(rides)
       num <- sum(rides)
       rowdf <- data.frame(Weekday=wkday, Rides=num)
       weekday_table_df <- rbind(weekday_table_df, rowdf)
@@ -500,7 +499,7 @@ server <- function(input, output, session) {
       }
       
     }
-    View(allDataMap)
+    # View(allDataMap)
     # View(summed)
     
     # First the view is set a little west of the center of the city with a zoom that covers most stops
